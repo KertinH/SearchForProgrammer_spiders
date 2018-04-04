@@ -1,0 +1,20 @@
+# SearchForProgrammer_spiders
+## SearchForProgrammer（爬虫模块）
+## 爬取六个国内外知名编程类问答网站的问答模块数据，并存入elasticsearch（包括搜索建议及分词）
+## pipelines内提供数据的mysql异步插入
+#### CSDN、Stack Overflow、开源中国、segmentFault、treehouse、博客园
+### 框架：
+#### scrapy、scrapy-redis
+### 库：
+#### datetime
+#### pytz
+#### re
+#### sys
+#### os
+#### setuptools
+#### twisted
+#### MYSQLdb
+#### elasticsearch_dsl
+#### random
+#### redis
+#### hashlib
