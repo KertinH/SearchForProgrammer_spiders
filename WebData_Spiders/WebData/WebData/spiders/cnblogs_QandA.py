@@ -39,3 +39,4 @@ class CnblogsQandaSpider(RedisSpider):
             next_url = response.urljoin(next_page)
             yield scrapy.Request(next_url,callback=self.parse,dont_filter=True)
         pass
+    
