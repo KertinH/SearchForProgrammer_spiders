@@ -19,7 +19,7 @@
 #### random
 #### redis
 #### hashlib
-## 本脚本启动前需先启动redis（并连接redis-cli）与elasticsearch（如还需将数据存入mysql，则还需启动mysql）
+## 本脚本启动前需先启动redis（并连接redis-cli）与elasticsearch（如还需将数据存入mysql，则还需启动mysql），并先单独run es_models文件夹下的types.py文件，进入elasticsearch-header进行最大值设置：https://blog.csdn.net/bushanyantanzhe/article/details/79109721
         此后需在redis-cli中添加如下命令(spidername为需要启动的爬虫名，url为起始爬取位置（可参考爬虫文件内的start_urls）)：
         lpush spidername:start_urls URL
         以启动csdn爬虫为例：
