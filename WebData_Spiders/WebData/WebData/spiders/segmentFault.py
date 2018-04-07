@@ -2,9 +2,12 @@
 import scrapy
 import datetime
 import pytz
+from time import sleep
 from ..scrapy_redis.spiders import RedisSpider
 from ..items import segmentFaultItem
 from ..Tools.md5 import get_md5
+from ..settings import all_id
+
 
 class SegmentfaultSpider(RedisSpider):
     name = 'sF'
@@ -40,9 +43,16 @@ class SegmentfaultSpider(RedisSpider):
                     item['create_time'] = datetime.datetime.now().date()
                 item['url'] = response.urljoin(url)
                 item['url_md5'] = get_md5(item['url'])
+                if item['url_md5'] in all_id:
+                    break
                 yield item
-        if len(response.xpath("//div[@class='text-center']/ul/li[@class='next']/a/@href").extract()) > 0:
+        if len(response.xpath("//div[@class='text-center']/ul/li[@class='next']/a/@href").extract()) > 0 \
+                and item['url_md5'] not in all_id:
             next_page =  response.xpath("//div[@class='text-center']/ul/li[@class='next']/a/@href").extract_first()
             next_url = response.urljoin(next_page)
             yield scrapy.Request(next_url,callback=self.parse,dont_filter=True)
+        else:
+            print('segmentFault爬取结束,将在24小时后重新开始爬取')
+            sleep(86400)
+            yield scrapy.Request('https://stackoverflow.com/questions?page=1&sort=newest',callback=self.parse,dont_filter=True)
         pass
