@@ -1,45 +1,58 @@
 # -*- coding: utf-8 -*-
 import scrapy
-import re
 import datetime
+import pytz
+from time import sleep
 from ..scrapy_redis.spiders import RedisSpider
-from ..items import stackOverflowItem
+from ..items import segmentFaultItem
 from ..Tools.md5 import get_md5
+from ..settings import all_id
 
 
-class StackoverflowSpider(RedisSpider):
-    name = 'sO'
-    allowed_domains = ['https://stackoverflow.com/questions?sort=newest']
-    # start_urls = ['https://stackoverflow.com/questions?sort=newest']
-    redis_key = 'sO:start_urls'
+class SegmentfaultSpider(RedisSpider):
+    name = 'sF'
+    allowed_domains = ['https://segmentfault.com/questions?page=1']
+    # start_urls = ['https://segmentfault.com/questions?page=1']
+    redis_key = 'sF:start_urls'
 
     def parse(self, response):
-        if len(response.xpath("//div[@id='content']/div[@id='mainbar']/div[@id='questions']/div[@class='question-summary']/div[@class='statscontainer']"
-                              "/div[2]/div[@class='status answered-accepted']").extract()) > 0:
-            data = response.xpath("//div[@id='content']/div[@id='mainbar']/div[@id='questions']/div[@class='question-summary']/div[@class='statscontainer']"
-                                   "/div[2]/div[@class='status answered-accepted']/../../../div[@class='summary']")
-            for title,content,tag,create_time,url in zip(
-                data.xpath("h3/a/text()").extract(),
-                data.xpath("div[@class='excerpt']/text()").extract(),
-                data.xpath("div[2]"),
-                data.xpath("div[@class='started fr']/div[@class='user-info ']/div[@class='user-action-time']/span/@title").extract(),
-                data.xpath("h3/a/@href").extract()
+        if len(response.xpath("//div[@class='stream-list question-stream']/section/div/div[@class='answers answered solved']/small/text()").extract()) > 0:
+            data = response.xpath("//div[@class='stream-list question-stream']/section/div/div[@class='answers answered solved']/../../div[@class='summary']")
+            for title,content,tag,url in zip(
+                    data.xpath("h2/a/text()").extract(),
+                    data.xpath("h2/a/text()").extract(),
+                    data.xpath("ul[@class='taglist--inline ib']"),
+                    data.xpath("h2/a/@href").extract()
             ):
-                item = stackOverflowItem()
-                item['web_name'] = 'StackOverflow'
-                item['web_url'] = 'https://stackoverflow.com/questions'
+                item = segmentFaultItem()
+                item['web_name'] = 'SegmentFault'
+                item['web_url'] = 'https://segmentfault.com'
+                c_time = [response.xpath("//div[@class='stream-list question-stream']/section/div/div[@class='answers']/../../"
+                                         "div[@class='summary']/ul[@class='author list-inline']/li/a/@data-created").extract_first()]
                 item['title'] = title
                 item['content'] = content
-                item['tag'] = ','.join(tag.xpath("a[@class='post-tag']/text()").extract())
-                try:
-                    item['create_time'] = datetime.datetime.strptime(re.match('.*?([\d-]+).*', create_time).group(1),'%Y.%m.%d').date()
-                except Exception as e:
+                tag = tag.xpath("li/a/text()").extract()
+                r_tag = []
+                for tag in tag:
+                    r_tag.append(tag.replace('\n','').strip())
+                item['tag'] = ','.join(r_tag)
+                if c_time[0] != None:
+                    item['create_time'] = datetime.datetime.strptime(datetime.datetime.fromtimestamp(int(c_time[0]),
+                                                                        pytz.timezone('Asia/Shanghai')).strftime('%Y-%m-%d'),'%Y-%m-%d').date()
+                else:
                     item['create_time'] = datetime.datetime.now().date()
                 item['url'] = response.urljoin(url)
                 item['url_md5'] = get_md5(item['url'])
+                if item['url_md5'] in all_id:
+                    break
                 yield item
-        if len(response.xpath("//div[@id='content']/div[@id='mainbar']/div[@class='pager fl']/a/span[contains(text(),'next')]").extract()) > 0:
-            next_page = response.xpath("//div[@id='content']/div[@id='mainbar']/div[@class='pager fl']/a/span[contains(text(),'next')]/../@href").extract_first()
+        if len(response.xpath("//div[@class='text-center']/ul/li[@class='next']/a/@href").extract()) > 0 \
+                and item['url_md5'] not in all_id:
+            next_page =  response.xpath("//div[@class='text-center']/ul/li[@class='next']/a/@href").extract_first()
             next_url = response.urljoin(next_page)
-            yield scrapy.Request(next_url, callback=self.parse, dont_filter=True)
+            yield scrapy.Request(next_url,callback=self.parse,dont_filter=True)
+        else:
+            print('segmentFault爬取结束,将在24小时后重新开始爬取')
+            sleep(86400)
+            yield scrapy.Request('https://stackoverflow.com/questions?page=1&sort=newest',callback=self.parse,dont_filter=True)
         pass
