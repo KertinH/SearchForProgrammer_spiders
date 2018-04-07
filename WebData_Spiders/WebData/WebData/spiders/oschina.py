@@ -4,9 +4,12 @@ import re
 import time
 import datetime
 import pytz
+from time import sleep
 from ..scrapy_redis.spiders import RedisSpider
 from ..items import oschinaItem
 from ..Tools.md5 import get_md5
+from ..settings import all_id
+
 
 class OschinaSpider(RedisSpider):
     name = 'oschina'
@@ -51,13 +54,19 @@ class OschinaSpider(RedisSpider):
                                                                                                      pytz.timezone('Asia/Shanghai')).strftime('%Y-%m-%d'),'%Y-%m-%d').date()
                 item['url'] = url
                 item['url_md5'] = get_md5(url)
+                if item['url_md5'] in all_id:
+                    break
                 yield item
-            if self.count < 3109:
+            if self.count < 3124 and item['url_md5'] not in all_id:
                 self.count += 1
                 next_url = 'https://www.oschina.net/question?catalog=1&show=updated&p={}'.format(self.count)
                 yield scrapy.Request(next_url,callback=self.parse,dont_filter=True)
+            else:
+                print('oschina爬取结束,将在24小时后重新开始爬取')
+                sleep(86400)
+                yield scrapy.Request('https://stackoverflow.com/questions?page=1&sort=newest',callback=self.parse,dont_filter=True)
         else:
-            if self.count < 3109:
+            if self.count < 3124:
                 self.count += 1
                 next_url = 'https://www.oschina.net/question?catalog=1&show=updated&p={}'.format(self.count)
                 yield scrapy.Request(next_url,callback=self.parse,dont_filter=True)
