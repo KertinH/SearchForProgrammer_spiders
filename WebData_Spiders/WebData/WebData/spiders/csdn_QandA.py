@@ -2,9 +2,11 @@
 import scrapy
 import re
 import datetime
+from time import sleep
 from ..scrapy_redis.spiders import RedisSpider
 from ..items import csdn_qaItem
 from ..Tools.md5 import get_md5
+from ..settings import all_id
 
 
 class CsdnQandaSpider(RedisSpider):
@@ -34,9 +36,16 @@ class CsdnQandaSpider(RedisSpider):
                 item['create_time'] = datetime.datetime.now().date()
             item['url'] = url
             item['url_md5'] = get_md5(url)
+            if item['url_md5'] in all_id:
+                break
             yield item
-        if len(response.xpath("//div[@class='common_con clearfix']/div[@class='csdn-pagination hide-set']/span/a[contains(text(),'下一页')]").extract()) > 0:
+        if len(response.xpath("//div[@class='common_con clearfix']/div[@class='csdn-pagination hide-set']/span/a[contains(text(),'下一页')]").extract()) > 0 \
+                and item['url_md5'] not in all_id:
             next_page = response.xpath("//div[@class='common_con clearfix']/div[@class='csdn-pagination hide-set']/span/a[contains(text(),'下一页')]/./@href").extract_first()
             next_url = response.urljoin(next_page)
             yield scrapy.Request(next_url,callback=self.parse,dont_filter=True)
+        else:
+            print('csdn爬取结束,将在24小时后重新开始爬取')
+            sleep(86400)
+            yield scrapy.Request('https://stackoverflow.com/questions?page=1&sort=newest',callback=self.parse,dont_filter=True)
         pass
