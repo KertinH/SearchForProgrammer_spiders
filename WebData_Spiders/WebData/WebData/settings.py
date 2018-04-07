@@ -23,6 +23,8 @@ NEWSPIDER_MODULE = 'WebData.spiders'
 SCHEDULER = "scrapy_redis.scheduler.Scheduler"
 DUPEFILTER_CLASS = "scrapy_redis.dupefilter.RFPDupeFilter"
 
+COMMANDS_MODULE = 'WebData.start_all'
+
 
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
 #USER_AGENT = 'WebData (+http://www.yourdomain.com)'
