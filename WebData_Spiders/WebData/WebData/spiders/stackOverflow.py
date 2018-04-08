@@ -2,6 +2,7 @@
 import scrapy
 import re
 import datetime
+from time import sleep
 from ..scrapy_redis.spiders import RedisSpider
 from ..items import stackOverflowItem
 from ..Tools.md5 import get_md5
@@ -13,6 +14,7 @@ class StackoverflowSpider(RedisSpider):
     allowed_domains = ['https://stackoverflow.com/questions?sort=newest']
     # start_urls = ['https://stackoverflow.com/questions?page=1&sort=newest']
     redis_key = 'sO:start_urls'
+    some = {}
 
     def parse(self, response):
         if len(response.xpath("//div[@id='content']/div[@id='mainbar']/div[@id='questions']/div[@class='question-summary']/div[@class='statscontainer']"
@@ -38,15 +40,24 @@ class StackoverflowSpider(RedisSpider):
                     item['create_time'] = datetime.datetime.now().date()
                 item['url'] = response.urljoin(url)
                 item['url_md5'] = get_md5(item['url'])
+                self.some = item
                 if item['url_md5'] in all_id:
                     break
                 yield item
-        if len(response.xpath("//div[@id='content']/div[@id='mainbar']/div[@class='pager fl']/a/span[contains(text(),'next')]").extract()) > 0 \
-                and item['url_md5'] not in all_id:
-            next_page = response.xpath("//div[@id='content']/div[@id='mainbar']/div[@class='pager fl']/a/span[contains(text(),'next')]/../@href").extract_first()
-            next_url = response.urljoin(next_page)
-            yield scrapy.Request(next_url, callback=self.parse, dont_filter=True)
+        if self.some:
+            if len(response.xpath("//div[@id='content']/div[@id='mainbar']/div[@class='pager fl']/a/span[contains(text(),'next')]").extract()) > 0 \
+                    and self.some['url_md5'] not in all_id:
+                next_page = response.xpath("//div[@id='content']/div[@id='mainbar']/div[@class='pager fl']/a/span[contains(text(),'next')]/../@href").extract_first()
+                next_url = response.urljoin(next_page)
+                yield scrapy.Request(next_url, callback=self.parse, dont_filter=True)
+            else:
+                print('stackOverFlow爬取结束,将在24小时后重新开始爬取')
+                sleep(86400)
+                yield scrapy.Request('https://stackoverflow.com/questions?page=1&sort=newest',callback=self.parse,dont_filter=True)
         else:
-            print('stackOverFlow爬取结束')
-            yield scrapy.Request('https://stackoverflow.com/questions?page=1&sort=newest',callback=self.parse,dont_filter=True)
+            if len(response.xpath("//div[@id='content']/div[@id='mainbar']/div[@class='pager fl']/a/span[contains(text(),'next')]").extract()) > 0:
+                next_page = response.xpath("//div[@id='content']/div[@id='mainbar']/div[@class='pager fl']/a/span[contains(text(),'next')]/../@href").extract_first()
+                next_url = response.urljoin(next_page)
+                yield scrapy.Request(next_url, callback=self.parse, dont_filter=True)
+            pass
         pass
