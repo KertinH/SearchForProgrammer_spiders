@@ -13,6 +13,7 @@ class SegmentfaultSpider(RedisSpider):
     allowed_domains = ['https://segmentfault.com/questions?page=1']
     # start_urls = ['https://segmentfault.com/questions?page=1']
     redis_key = 'sF:start_urls'
+    some = {}
 
     def parse(self, response):
         if len(response.xpath("//div[@class='stream-list question-stream']/section/div/div[@class='answers answered solved']/small/text()").extract()) > 0:
@@ -42,15 +43,23 @@ class SegmentfaultSpider(RedisSpider):
                     item['create_time'] = datetime.datetime.now().date()
                 item['url'] = response.urljoin(url)
                 item['url_md5'] = get_md5(item['url'])
+                self.some = item
                 if item['url_md5'] in all_id:
                     break
                 yield item
-        if len(response.xpath("//div[@class='text-center']/ul/li[@class='next']/a/@href").extract()) > 0 \
-                and item['url_md5'] not in all_id:
-            next_page =  response.xpath("//div[@class='text-center']/ul/li[@class='next']/a/@href").extract_first()
-            next_url = response.urljoin(next_page)
-            yield scrapy.Request(next_url,callback=self.parse,dont_filter=True)
+        if self.some:
+            if len(response.xpath("//div[@class='text-center']/ul/li[@class='next']/a/@href").extract()) > 0 \
+                    and self.some['url_md5'] not in all_id:
+                next_page =  response.xpath("//div[@class='text-center']/ul/li[@class='next']/a/@href").extract_first()
+                next_url = response.urljoin(next_page)
+                yield scrapy.Request(next_url,callback=self.parse,dont_filter=True)
+            else:
+                print('segmentFault爬取结束')
+                yield scrapy.Request('https://segmentfault.com/questions?page=1',callback=self.parse,dont_filter=True)
         else:
-            print('segmentFault爬取结束')
-            yield scrapy.Request('https://segmentfault.com/questions?page=1',callback=self.parse,dont_filter=True)
+            if len(response.xpath("//div[@class='text-center']/ul/li[@class='next']/a/@href").extract()) > 0:
+                next_page = response.xpath("//div[@class='text-center']/ul/li[@class='next']/a/@href").extract_first()
+                next_url = response.urljoin(next_page)
+                yield scrapy.Request(next_url, callback=self.parse, dont_filter=True)
+            pass
         pass
