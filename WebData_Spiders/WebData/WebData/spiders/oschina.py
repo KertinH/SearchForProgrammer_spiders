@@ -16,6 +16,7 @@ class OschinaSpider(RedisSpider):
     # start_urls = ['https://www.oschina.net/question?catalog=1&show=updated&p=1']
     redis_key = 'oschina:start_urls'
     count = 1
+    some = {}
 
     def parse(self, response):
         if len(response.xpath("//section[@class='question_list']/article[@class='wrapper question-wrapper ']/section/div[@class='box-fl question_counts']/"
@@ -53,18 +54,27 @@ class OschinaSpider(RedisSpider):
                                                                                                      pytz.timezone('Asia/Shanghai')).strftime('%Y-%m-%d'),'%Y-%m-%d').date()
                 item['url'] = url
                 item['url_md5'] = get_md5(url)
+                self.some = item
                 if item['url_md5'] in all_id:
                     break
                 yield item
-            if self.count < 3124 and item['url_md5'] not in all_id:
-                self.count += 1
-                next_url = 'https://www.oschina.net/question?catalog=1&show=updated&p={}'.format(self.count)
-                yield scrapy.Request(next_url,callback=self.parse,dont_filter=True)
+            if self.some:
+                if self.count < 3124 and self.some['url_md5'] not in all_id:
+                    self.count += 1
+                    next_url = 'https://www.oschina.net/question?catalog=1&show=updated&p={}'.format(self.count)
+                    yield scrapy.Request(next_url,callback=self.parse,dont_filter=True)
+                else:
+                    print('oschina爬取结束')
+                    yield scrapy.Request('https://www.oschina.net/question?catalog=1&show=updated&p=1',callback=self.parse,dont_filter=True)
             else:
-                print('oschina爬取结束')
-                yield scrapy.Request('https://www.oschina.net/question?catalog=1&show=updated&p=1',callback=self.parse,dont_filter=True)
+                if self.count < 3124:
+                    self.count += 1
+                    next_url = 'https://www.oschina.net/question?catalog=1&show=updated&p={}'.format(self.count)
+                    yield scrapy.Request(next_url, callback=self.parse, dont_filter=True)
+                pass
         else:
             if self.count < 3124:
                 self.count += 1
                 next_url = 'https://www.oschina.net/question?catalog=1&show=updated&p={}'.format(self.count)
                 yield scrapy.Request(next_url,callback=self.parse,dont_filter=True)
+            pass
