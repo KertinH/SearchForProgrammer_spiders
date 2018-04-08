@@ -13,6 +13,7 @@ class CsdnQandaSpider(RedisSpider):
     allowed_domains = ['http://ask.csdn.net/questions?type=resolved']
     # start_urls = ['http://ask.csdn.net/questions?type=resolved']
     redis_key = 'csdn_QA:start_urls'
+    some = {}
 
     def parse(self, response):
         data = response.xpath("//div[@class='common_con clearfix']/div[@class='questions_detail_con']")
@@ -35,15 +36,23 @@ class CsdnQandaSpider(RedisSpider):
                 item['create_time'] = datetime.datetime.now().date()
             item['url'] = url
             item['url_md5'] = get_md5(url)
+            self.some = item
             if item['url_md5'] in all_id:
                 break
             yield item
-        if len(response.xpath("//div[@class='common_con clearfix']/div[@class='csdn-pagination hide-set']/span/a[contains(text(),'下一页')]").extract()) > 0 \
-                and item['url_md5'] not in all_id:
-            next_page = response.xpath("//div[@class='common_con clearfix']/div[@class='csdn-pagination hide-set']/span/a[contains(text(),'下一页')]/./@href").extract_first()
-            next_url = response.urljoin(next_page)
-            yield scrapy.Request(next_url,callback=self.parse,dont_filter=True)
+        if self.some:
+            if len(response.xpath("//div[@class='common_con clearfix']/div[@class='csdn-pagination hide-set']/span/a[contains(text(),'下一页')]").extract()) > 0 \
+                    and self.some['url_md5'] not in all_id:
+                next_page = response.xpath("//div[@class='common_con clearfix']/div[@class='csdn-pagination hide-set']/span/a[contains(text(),'下一页')]/./@href").extract_first()
+                next_url = response.urljoin(next_page)
+                yield scrapy.Request(next_url,callback=self.parse,dont_filter=True)
+            else:
+                print('csdn爬取结束')
+                yield scrapy.Request('http://ask.csdn.net/questions?type=resolved',callback=self.parse,dont_filter=True)
         else:
-            print('csdn爬取结束')
-            yield scrapy.Request('http://ask.csdn.net/questions?type=resolved',callback=self.parse,dont_filter=True)
+            if len(response.xpath("//div[@class='common_con clearfix']/div[@class='csdn-pagination hide-set']/span/a[contains(text(),'下一页')]").extract()) > 0:
+                next_page = response.xpath("//div[@class='common_con clearfix']/div[@class='csdn-pagination hide-set']/span/a[contains(text(),'下一页')]/./@href").extract_first()
+                next_url = response.urljoin(next_page)
+                yield scrapy.Request(next_url, callback=self.parse, dont_filter=True)
+            pass
         pass
