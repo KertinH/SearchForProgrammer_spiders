@@ -12,6 +12,7 @@ class CnblogsQandaSpider(RedisSpider):
     allowed_domains = ['https://q.cnblogs.com/list/solved']
     # start_urls = ['https://q.cnblogs.com/list/solved']
     redis_key = 'cnblogs_QA:start_urls'
+    some = {}
 
     def parse(self, response):
         data = response.xpath("//div[@class='left_sidebar']/div[@class='one_entity']/div[@class='news_item']")
@@ -34,16 +35,23 @@ class CnblogsQandaSpider(RedisSpider):
                 item['create_time'] = datetime.datetime.now().date()
             item['url'] = response.urljoin(url)
             item['url_md5'] = get_md5(item['url'])
+            self.some = item
             if item['url_md5'] in all_id:
                 break
             yield item
-        if len(response.xpath("//div[@class='left_sidebar']/div[@id='pager']/a[contains(text(),'Next')]/@href").extract()) > 0\
-                and item['url_md5'] not in all_id:
-            next_page = response.xpath("//div[@class='left_sidebar']/div[@id='pager']/a[contains(text(),'Next')]/@href").extract_first()
-            next_url = response.urljoin(next_page)
-            yield scrapy.Request(next_url,callback=self.parse,dont_filter=True)
+        if self.some:
+            if len(response.xpath("//div[@class='left_sidebar']/div[@id='pager']/a[contains(text(),'Next')]/@href").extract()) > 0\
+                    and self.some['url_md5'] not in all_id:
+                next_page = response.xpath("//div[@class='left_sidebar']/div[@id='pager']/a[contains(text(),'Next')]/@href").extract_first()
+                next_url = response.urljoin(next_page)
+                yield scrapy.Request(next_url,callback=self.parse,dont_filter=True)
+            else:
+                print('cnblogs爬取完毕')
+                yield scrapy.Request('https://q.cnblogs.com/list/solved',callback=self.parse,dont_filter=True)
         else:
-            print('cnblogs爬取完毕')
-            yield scrapy.Request('https://q.cnblogs.com/list/solved',callback=self.parse,dont_filter=True)
+            if len(response.xpath("//div[@class='left_sidebar']/div[@id='pager']/a[contains(text(),'Next')]/@href").extract()) > 0:
+                next_page = response.xpath("//div[@class='left_sidebar']/div[@id='pager']/a[contains(text(),'Next')]/@href").extract_first()
+                next_url = response.urljoin(next_page)
+                yield scrapy.Request(next_url, callback=self.parse, dont_filter=True)
+            pass
         pass
-    
