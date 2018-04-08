@@ -13,6 +13,7 @@ class TreehouseSpider(RedisSpider):
     allowed_domains = ['https://teamtreehouse.com/community']
     # start_urls = ['https://teamtreehouse.com/community']
     redis_key = 'treehouse:start_urls'
+    some = {}
 
     def parse(self, response):
         if len(response.xpath("//ul[@class='discussion-list']/li[@class='discussion-item discussion-best-answer']").extract()) > 0:
@@ -36,15 +37,23 @@ class TreehouseSpider(RedisSpider):
                     item['create_time'] = datetime.datetime.now().date()
                 item['url'] = response.urljoin(url)
                 item['url_md5'] = get_md5(item['url'])
+                self.some = item
                 if item['url_md5'] in all_id:
                     break
                 yield item
-        if len(response.xpath("//div[@class='pagination-container']/a[contains(text(),'Next')]/@href").extract()) > 0\
-                and item['url_md5'] not in all_id:
-            next_page = response.xpath("//div[@class='pagination-container']/a[contains(text(),'Next')]/@href").extract_first()
-            next_url = response.urljoin(next_page)
-            yield scrapy.Request(next_url,callback=self.parse,dont_filter=True)
+        if self.some:
+            if len(response.xpath("//div[@class='pagination-container']/a[contains(text(),'Next')]/@href").extract()) > 0\
+                    and self.some['url_md5'] not in all_id:
+                next_page = response.xpath("//div[@class='pagination-container']/a[contains(text(),'Next')]/@href").extract_first()
+                next_url = response.urljoin(next_page)
+                yield scrapy.Request(next_url,callback=self.parse,dont_filter=True)
+            else:
+                print('treehouse爬取结束')
+                yield scrapy.Request('https://teamtreehouse.com/community',callback=self.parse,dont_filter=True)
         else:
-            print('treehouse爬取结束')
-            yield scrapy.Request('https://teamtreehouse.com/community',callback=self.parse,dont_filter=True)
+            if len(response.xpath("//div[@class='pagination-container']/a[contains(text(),'Next')]/@href").extract()) > 0:
+                next_page = response.xpath("//div[@class='pagination-container']/a[contains(text(),'Next')]/@href").extract_first()
+                next_url = response.urljoin(next_page)
+                yield scrapy.Request(next_url, callback=self.parse, dont_filter=True)
+            pass
         pass
