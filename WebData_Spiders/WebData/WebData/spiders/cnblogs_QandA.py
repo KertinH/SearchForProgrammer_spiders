@@ -2,7 +2,6 @@
 import scrapy
 import re
 import datetime
-from time import sleep
 from ..scrapy_redis.spiders import RedisSpider
 from ..items import cnblog_qaItem
 from ..Tools.md5 import get_md5
@@ -44,7 +43,6 @@ class CnblogsQandaSpider(RedisSpider):
             next_url = response.urljoin(next_page)
             yield scrapy.Request(next_url,callback=self.parse,dont_filter=True)
         else:
-            print('cnblogs爬取完毕,将在24小时后重新开始爬取')
-            sleep(86400)
+            print('cnblogs爬取完毕')
             yield scrapy.Request('https://stackoverflow.com/questions?page=1&sort=newest',callback=self.parse,dont_filter=True)
         pass
