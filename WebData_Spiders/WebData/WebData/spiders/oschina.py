@@ -4,7 +4,6 @@ import re
 import time
 import datetime
 import pytz
-from time import sleep
 from ..scrapy_redis.spiders import RedisSpider
 from ..items import oschinaItem
 from ..Tools.md5 import get_md5
@@ -62,8 +61,7 @@ class OschinaSpider(RedisSpider):
                 next_url = 'https://www.oschina.net/question?catalog=1&show=updated&p={}'.format(self.count)
                 yield scrapy.Request(next_url,callback=self.parse,dont_filter=True)
             else:
-                print('oschina爬取结束,将在24小时后重新开始爬取')
-                sleep(86400)
+                print('oschina爬取结束')
                 yield scrapy.Request('https://stackoverflow.com/questions?page=1&sort=newest',callback=self.parse,dont_filter=True)
         else:
             if self.count < 3124:
