@@ -45,5 +45,5 @@ class CsdnQandaSpider(RedisSpider):
             yield scrapy.Request(next_url,callback=self.parse,dont_filter=True)
         else:
             print('csdn爬取结束')
-            yield scrapy.Request('https://stackoverflow.com/questions?page=1&sort=newest',callback=self.parse,dont_filter=True)
+            yield scrapy.Request('http://ask.csdn.net/questions?type=resolved',callback=self.parse,dont_filter=True)
         pass
