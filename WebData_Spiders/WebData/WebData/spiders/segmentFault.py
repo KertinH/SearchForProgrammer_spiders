@@ -2,7 +2,6 @@
 import scrapy
 import datetime
 import pytz
-from time import sleep
 from ..scrapy_redis.spiders import RedisSpider
 from ..items import segmentFaultItem
 from ..Tools.md5 import get_md5
@@ -52,7 +51,6 @@ class SegmentfaultSpider(RedisSpider):
             next_url = response.urljoin(next_page)
             yield scrapy.Request(next_url,callback=self.parse,dont_filter=True)
         else:
-            print('segmentFault爬取结束,将在24小时后重新开始爬取')
-            sleep(86400)
-            yield scrapy.Request('https://stackoverflow.com/questions?page=1&sort=newest',callback=self.parse,dont_filter=True)
+            print('segmentFault爬取结束')
+            yield scrapy.Request('https://segmentfault.com/questions?page=1',callback=self.parse,dont_filter=True)
         pass
