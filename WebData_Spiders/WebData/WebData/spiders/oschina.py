@@ -62,7 +62,7 @@ class OschinaSpider(RedisSpider):
                 yield scrapy.Request(next_url,callback=self.parse,dont_filter=True)
             else:
                 print('oschina爬取结束')
-                yield scrapy.Request('https://stackoverflow.com/questions?page=1&sort=newest',callback=self.parse,dont_filter=True)
+                yield scrapy.Request('https://www.oschina.net/question?catalog=1&show=updated&p=1',callback=self.parse,dont_filter=True)
         else:
             if self.count < 3124:
                 self.count += 1
