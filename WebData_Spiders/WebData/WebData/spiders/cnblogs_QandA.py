@@ -44,6 +44,6 @@ class CnblogsQandaSpider(RedisSpider):
             yield scrapy.Request(next_url,callback=self.parse,dont_filter=True)
         else:
             print('cnblogs爬取完毕')
-            yield scrapy.Request('https://stackoverflow.com/questions?page=1&sort=newest',callback=self.parse,dont_filter=True)
+            yield scrapy.Request('https://q.cnblogs.com/list/solved',callback=self.parse,dont_filter=True)
         pass
     
