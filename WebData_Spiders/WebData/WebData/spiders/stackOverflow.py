@@ -18,9 +18,9 @@ class StackoverflowSpider(RedisSpider):
 
     def parse(self, response):
         if len(response.xpath("//div[@id='content']/div[@id='mainbar']/div[@id='questions']/div[@class='question-summary']/div[@class='statscontainer']"
-                              "/div[2]/div[@class='status answered-accepted']").extract()) > 0:
+                              "/div[@class='stats']/div[@class='status answered-accepted']").extract()) > 0:
             data = response.xpath("//div[@id='content']/div[@id='mainbar']/div[@id='questions']/div[@class='question-summary']/div[@class='statscontainer']"
-                                   "/div[2]/div[@class='status answered-accepted']/../../../div[@class='summary']")
+                                   "/div[@class='stats']/div[@class='status answered-accepted']/../../../div[@class='summary']")
             for title,content,tag,create_time,url in zip(
                 data.xpath("h3/a/text()").extract(),
                 data.xpath("div[@class='excerpt']/text()").extract(),
