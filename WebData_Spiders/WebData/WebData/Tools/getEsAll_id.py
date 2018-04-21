@@ -2,7 +2,7 @@ from elasticsearch_dsl.connections import connections
 
 
 def get_all_id():
-    es = connections.create_connection(hosts=['localhost'])
+    es = connections.create_connection(hosts=['localhost'],timeout=120)
 
     all_id = []
     all_data = es.search('qa', body={"query": {"match_all": {}}, "_source": "url", "from": 0, "size": 10000000})['hits']['hits']
